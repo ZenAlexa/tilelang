@@ -108,6 +108,7 @@ class CUDABinaryCache:
         target_code: list[str],
         compile_format: str,
         options: list[str] | None = None,
+        compiler: str = "nvcc",
     ) -> str:
         # Compiler options must be part of the key: flags like --use_fast_math
         # change the generated SASS without changing the CUDA source, so keying
@@ -121,6 +122,7 @@ class CUDABinaryCache:
             "target_code": tuple(target_code),
             "compile_format": compile_format,
             "options": tuple(options or []),
+            "compiler": compiler,
         }
         if env.should_use_kernel_cache_lib_stamp():
             lib_stamp = cls._get_tilelang_lib_stamp()

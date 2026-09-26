@@ -14,7 +14,7 @@ def get_nvrtc_version() -> tuple[int, int]:
 def compile_cuda(
     code: str,
     target_format: Literal["ptx", "cubin"] = "ptx",
-    arch: int | None = None,
+    arch: int | str | None = None,
     options: str | list[str] | None = None,
     verbose: bool = False,
 ) -> bytearray:
@@ -28,8 +28,10 @@ def compile_cuda(
     target_format : Literal["ptx", "cubin"]
         The target format of nvrtc compiler.
 
-    arch : Optional[int]
-        The cuda architecture code.
+    arch : Optional[Union[int, str]]
+        The CUDA architecture code. String tokens preserve the exact suffix,
+        such as "90", "90a", or "100f". Integer values use the legacy
+        architecture-specific suffix for SM90 and newer.
 
     options : Optional[Union[str, List[str]]]
         The additional options.
@@ -48,7 +50,7 @@ def compile_cuda(
         major, minor = parse_compute_version(get_target_compute_version(Target.current(allow_none=True)))
         arch = major * 10 + minor
     prefix = "compute" if target_format == "ptx" else "sm"
-    suffix = "a" if arch >= 90 else ""
+    suffix = "a" if isinstance(arch, int) and arch >= 90 else ""
     arch_option = f"--gpu-architecture={prefix}_{arch}{suffix}"
 
     file_name = "tvm_kernels"
