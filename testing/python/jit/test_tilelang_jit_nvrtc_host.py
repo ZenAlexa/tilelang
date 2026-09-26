@@ -10,6 +10,7 @@ if not is_nvrtc_available:
     pytest.skip("cuda-python is required to import the NVRTC adapter", allow_module_level=True)
 
 from tilelang.jit.adapter.nvrtc.adapter import NVRTCKernelAdapter
+from tilelang.jit.adapter.utils import parse_function_call_args
 
 
 def _make_host_only_adapter(program, result_idx=None):
@@ -108,3 +109,21 @@ def test_nvrtc_adapter_resolves_output_shape_from_later_input():
     assert args[1] is tensor
     assert args[2:] == (7,)
     assert stream == 0
+
+
+def test_nvrtc_call_parser_preserves_host_computed_arguments():
+    host_exprs = ["A", "B", "n * 3 + 1", "(n * 3 + 1) * 2 + 5"]
+    parsed = parse_function_call_args(
+        "void main_kernel(int* A, int* B, int p, int q)",
+        [{"name": "A", "type": "ctypes.c_void_p"}, {"name": "B", "type": "ctypes.c_void_p"}],
+        host_exprs,
+        transform_arg=lambda name, arg_type: (name, arg_type),
+        fallback_arg=lambda expr: (expr, "ctypes.c_int32"),
+    )
+
+    assert parsed == [
+        ("A", "ctypes.c_void_p"),
+        ("B", "ctypes.c_void_p"),
+        ("n * 3 + 1", "ctypes.c_int32"),
+        ("(n * 3 + 1) * 2 + 5", "ctypes.c_int32"),
+    ]
